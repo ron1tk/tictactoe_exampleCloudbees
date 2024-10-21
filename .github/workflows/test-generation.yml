@@ -1,0 +1,42 @@
+name: Automated Test Generation Pipeline
+
+# Specify the events that trigger this workflow
+on:
+  push:            # Trigger workflow on push events
+    branches:
+      - main       # Trigger only when pushing to 'main'
+      - "feature/*" # Trigger on any branch named 'feature/*'
+  pull_request:    # Optionally, trigger on pull requests to specific branches
+    branches:
+      - main
+
+jobs:
+  generate-tests:
+    runs-on: ubuntu-latest  # The environment to run this job on
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2  # Step to pull your repository's code
+
+      - name: Set up Python (for running scripts)
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
+
+      - name: Install dependencies
+        run: |
+          pip install requests  # Install any required dependencies
+
+      - name: Generate code diff
+        run: git diff HEAD~1 HEAD > changes.diff  # Capture code changes
+
+      - name: Run test generation script
+        run: python generate_tests.py  # Execute the script that generates tests
+
+      - name: Commit and push generated tests
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add .
+          git commit -m "Add generated test cases"
+          git push origin HEAD
