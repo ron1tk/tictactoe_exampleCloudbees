@@ -16,10 +16,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2  # Step to pull your repository's code
+        uses: actions/checkout@v3  # Updated to the latest version
 
       - name: Set up Python (for running scripts)
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4  # Updated to the latest version
         with:
           python-version: '3.8'
 
