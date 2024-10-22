@@ -1,0 +1,31 @@
+Here are some test cases you can use to validate the changes in the provided code:
+
+1. Test Case 1: Verify if the actions/checkout version is updated to v3 and actions/setup-python version is updated to v4
+Expected Output: Code successfully runs with the updated versions
+
+2. Test Case 2: Verify if the actions/checkout version is not v3 and actions/setup-python version is updated to v4
+Expected Output: The code fails due to an incorrect actions/checkout version
+
+3. Test Case 3: Verify if the actions/checkout version is updated to v3 and actions/setup-python version is not v4
+Expected Output: The code fails due to an incorrect actions/setup-python version
+
+4. Test Case 4: Verify if the actions/checkout version is not v3 and actions/setup-python version is not v4
+Expected Output: The code fails due to both incorrect versions
+
+5. Test Case 5: Verify if the actions/checkout version is v3 and actions/setup-python version is v4, with a different python-version specified
+Expected Output: Code successfully runs with the correct versions but may fail if the python-version is incompatible
+
+6. Test Case 6: Verify if the actions/checkout version is v3 and actions/setup-python version is v4, with python-version '3.8'
+Expected Output: Code successfully runs with the correct versions and python-version '3.8'
+
+7. Test Case 7: Verify if the actions/checkout version is v3 but actions/setup-python version is still at v2
+Expected Output: The code fails as actions/setup-python version is not updated
+
+8. Test Case 8: Verify if the actions/checkout version is v2 but actions/setup-python version is updated to v4
+Expected Output: The code fails as actions/checkout version is not updated
+
+9. Test Case 9: Verify if both actions/checkout and actions/setup-python versions are updated to the latest available
+Expected Output: Code successfully runs with the latest versions
+
+10. Test Case 10: Verify if no version changes are made to actions/checkout and actions/setup-python
+Expected Output: Code runs as expected with the existing versions
