@@ -88,7 +88,7 @@ def main():
     if prompt:
         response = call_openai_api(prompt)
         if response and 'choices' in response and response['choices']:
-            test_cases = response['choices'][0]['text']
+            test_cases = response['choices'][0]['message']
             print(f"Generated Test Cases for {changed_files}:\n{test_cases}")
         else:
             logging.error("Failed to generate test cases or empty response from API.")
