@@ -26,6 +26,7 @@ class TicTacToe:
         self.move_history.append((square, self.current_player))
         if self.check_winner(square):
             self.current_winner = self.current_player
+            self.scores[self.current_player] += 1  # Update score for the winner
             return True, "Player {} wins!".format(self.current_player)
         self.current_player = 'O' if self.current_player == 'X' else 'X'
         return True, "Move successful"
@@ -62,6 +63,9 @@ class TicTacToe:
         self.current_player = 'X'
         print("Game has been reset!")
 
+    def print_scores(self):
+        print(f"Scores: X - {self.scores['X']}, O - {self.scores['O']}, Draws - {self.scores['Draws']}")
+
 def play_game():
     game = TicTacToe()
     print("Welcome to Tic Tac Toe!")
@@ -79,10 +83,13 @@ def play_game():
                 if msg.startswith("Player"):
                     print("Game Over")
                     game.print_board()  # Show the final board
+                    game.print_scores()  # Print scores after game ends
                     break
                 elif game.is_board_full():
                     print("It's a tie!")
+                    game.scores['Draws'] += 1  # Update score for a draw
                     game.print_board()  # Show the final board
+                    game.print_scores()  # Print scores after game ends
                     break
         except ValueError:
             print("Please enter a valid number.")
