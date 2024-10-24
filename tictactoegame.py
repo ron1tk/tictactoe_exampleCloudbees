@@ -1,3 +1,6 @@
+import random
+import json
+
 class TicTacToe:
     def __init__(self, board_size=3):
         self.board_size = board_size
@@ -75,20 +78,72 @@ class TicTacToe:
     def print_scores(self):
         print(f"Scores: X - {self.scores['X']}, O - {self.scores['O']}, Draws - {self.scores['Draws']}")
 
+    def reset_scores(self):
+        """Reset the scores for both players."""
+        self.scores = {'X': 0, 'O': 0, 'Draws': 0}
+        print("Scores have been reset!")
+
+    def suggest_move(self):
+        """Suggest a random available move for the current player."""
+        moves = self.available_moves()
+        if moves:
+            suggestion = random.choice(moves)
+            print(f"Suggested move for {self.current_player}: {suggestion}")
+            return suggestion
+        return None
+
+    def save_game(self, filename="tictactoe_save.json"):
+        """Save the current game state to a file."""
+        game_state = {
+            "board": self.board,
+            "scores": self.scores,
+            "current_player": self.current_player,
+            "move_history": self.move_history
+        }
+        with open(filename, "w") as f:
+            json.dump(game_state, f)
+        print(f"Game saved to {filename}.")
+
+    def load_game(self, filename="tictactoe_save.json"):
+        """Load the game state from a file."""
+        try:
+            with open(filename, "r") as f:
+                game_state = json.load(f)
+                self.board = game_state["board"]
+                self.scores = game_state["scores"]
+                self.current_player = game_state["current_player"]
+                self.move_history = game_state["move_history"]
+            print(f"Game loaded from {filename}.")
+        except FileNotFoundError:
+            print(f"No saved game found at {filename}.")
+
 def play_game():
     game = TicTacToe()
     print("Welcome to Tic Tac Toe!")
     print("Enter -1 at any time to reset the game.")
+    print("Enter -2 to undo the last move.")
+    print("Enter -3 to get a move suggestion.")
+    print("Enter -4 to save the game.")
+    print("Enter -5 to load a saved game.")
     while True:
         game.print_board()
         try:
             square = int(input(f"Turn for {game.current_player}. Move on which space? (0-{game.board_size*game.board_size - 1}): "))
             if square == -1:  # Check if the reset command is entered
                 game.reset_game()
-                continue  # Skip the rest of the loop and start over
-            elif square == -2:  # Add command to undo the last move
+                continue
+            elif square == -2:  # Undo last move
                 success, msg = game.undo_move()
                 print(msg)
+                continue
+            elif square == -3:  # Suggest a move
+                game.suggest_move()
+                continue
+            elif square == -4:  # Save the game
+                game.save_game()
+                continue
+            elif square == -5:  # Load a saved game
+                game.load_game()
                 continue
             success, msg = game.make_move(square)
             print(msg)
@@ -100,7 +155,6 @@ def play_game():
                     break
                 elif game.is_board_full():
                     print("It's a tie!")
-                    print("Can you believe it !!!!!")
                     game.scores['Draws'] += 1  # Update score for a draw
                     game.print_board()  # Show the final board
                     game.print_scores()  # Print scores after game ends

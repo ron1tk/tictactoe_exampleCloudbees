@@ -1,0 +1,1 @@
+{"board": [" ", " ", "X", "O", "X", "O", " ", " ", " "], "scores": {"X": 0, "O": 0, "Draws": 0}, "current_player": "X", "move_history": [[2, "X"], [3, "O"], [4, "X"], [5, "O"]]}
