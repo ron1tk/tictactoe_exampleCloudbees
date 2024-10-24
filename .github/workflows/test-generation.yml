@@ -23,7 +23,8 @@ jobs:
       - name: Detect changed files
         id: files
         run: |
-          echo "changed_files=$(git diff --name-only HEAD^ HEAD)" >> $GITHUB_ENV
+          changed_files=$(git diff --name-only HEAD^ HEAD)
+          echo "changed_files=$changed_files" >> $GITHUB_ENV
       - name: Debug changed files
         run: |
           echo "Changed files: ${{ env.changed_files }}"
@@ -41,12 +42,14 @@ jobs:
       - name: Git status before commit
         run: |
           git status
+      - name: Ensure Git is Properly Configured
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
       - name: Create a new branch
         if: env.changes_exist == '1'
         run: |
           git checkout -b automated-test-branch
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
           git add .
           git commit -m "Add generated test cases"
           git push --set-upstream origin automated-test-branch
