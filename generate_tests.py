@@ -2,7 +2,7 @@ import requests
 import os
 import sys
 import logging
-from requests.exceptions import RequestException, HTTPError
+from requests.exceptions import RequestException
 from typing import List, Optional, Dict, Any
 
 # Set up logging
@@ -14,41 +14,45 @@ def get_changed_files() -> List[str]:
 
 def detect_language(file_name: str) -> str:
     """Detect programming language based on file extension."""
-    if file_name.endswith('.py'):
-        return 'Python'
-    elif file_name.endswith('.js'):
-        return 'JavaScript'
-    elif file_name.endswith('.ts'):
-        return 'TypeScript'
-    elif file_name.endswith('.java'):
-        return 'Java'
-    elif file_name.endswith('.cpp'):
-        return 'C++'
-    elif file_name.endswith('.cs'):
-        return 'C#'
-    return 'Unknown'
+    extensions = {
+        '.py': 'Python',
+        '.js': 'JavaScript',
+        '.ts': 'TypeScript',
+        '.java': 'Java',
+        '.cpp': 'C++',
+        '.cs': 'C#'
+    }
+    _, ext = os.path.splitext(file_name)
+    return extensions.get(ext, 'Unknown')
 
-def create_prompt(changed_files: List[str], language: str) -> Optional[str]:
-    """Create a language-specific prompt for test generation based on changed files."""
-    if not changed_files:
-        logging.info("No changed files to generate tests for.")
+def create_prompt(file_name: str, language: str) -> Optional[str]:
+    """Create a language-specific prompt for test generation based on a changed file."""
+    if not file_name:
+        logging.info("No changed file to generate tests for.")
+        return None
+
+    # Read the content of the changed file
+    try:
+        with open(file_name, 'r') as f:
+            code_content = f.read()
+    except Exception as e:
+        logging.error(f"Error reading file {file_name}: {e}")
         return None
 
     language_template = {
-        'Python': "Please generate detailed Python unit tests for the following changes:\n",
-        'JavaScript': "Please generate detailed JavaScript unit tests for the following changes:\n",
-        'TypeScript': "Please generate detailed TypeScript unit tests for the following changes:\n",
-        'Java': "Please generate detailed Java unit tests for the following changes:\n",
-        'C++': "Please generate detailed C++ unit tests for the following changes:\n",
-        'C#': "Please generate detailed C# unit tests for the following changes:\n"
+        'Python': "Please generate detailed Python unit tests for the following code:\n",
+        'JavaScript': "Please generate detailed JavaScript unit tests for the following code:\n",
+        'TypeScript': "Please generate detailed TypeScript unit tests for the following code:\n",
+        'Java': "Please generate detailed Java unit tests for the following code:\n",
+        'C++': "Please generate detailed C++ unit tests for the following code:\n",
+        'C#': "Please generate detailed C# unit tests for the following code:\n"
     }
 
-    changes_summary = '\n'.join(f"- {file}" for file in changed_files)
-    prompt = language_template.get(language, "Please generate unit tests for the following code changes:\n") + changes_summary
+    prompt = language_template.get(language, "Please generate unit tests for the following code:\n") + code_content
     logging.info(f"Created prompt for {language}. Length: {len(prompt)} characters")
     return prompt
 
-def call_openai_api(prompt: str) -> Optional[Dict[str, Any]]:
+def call_openai_api(prompt: str) -> Optional[str]:
     """Call OpenAI API to generate test cases based on the prompt."""
     api_key = os.getenv('OPENAI_API_KEY')
     if not api_key:
@@ -71,11 +75,20 @@ def call_openai_api(prompt: str) -> Optional[Dict[str, Any]]:
     try:
         response = requests.post('https://api.openai.com/v1/chat/completions', headers=headers, json=data)
         response.raise_for_status()
-        return response.json()
+        # Extract the generated content
+        return response.json()['choices'][0]['message']['content']
     except RequestException as e:
         logging.error(f"API request failed: {e}")
         return None
 
+def save_test_cases(file_name: str, test_cases: str):
+    """Save generated test cases to a new file."""
+    base_name = os.path.basename(file_name)
+    name, ext = os.path.splitext(base_name)
+    output_file = f"test_{name}{ext}"
+    with open(output_file, 'w') as f:
+        f.write(test_cases)
+    logging.info(f"Test cases saved to {output_file}")
 
 def main():
     changed_files = get_changed_files()
@@ -83,17 +96,19 @@ def main():
         logging.info("No files changed.")
         return
 
-    language = detect_language(' '.join(changed_files))
-    prompt = create_prompt(changed_files, language)
-    if prompt:
-        response = call_openai_api(prompt)
-        if response and 'choices' in response and response['choices']:
-            test_cases = response['choices'][0]['message']
-            print(f"Generated Test Cases for {changed_files}:\n{test_cases}")
+    for file_name in changed_files:
+        language = detect_language(file_name)
+        prompt = create_prompt(file_name, language)
+        if prompt:
+            test_cases = call_openai_api(prompt)
+            if test_cases:
+                print(f"Generated Test Cases for {file_name}:\n{test_cases}")
+                # Save the test cases to a file
+                save_test_cases(file_name, test_cases)
+            else:
+                logging.error("Failed to generate test cases or empty response from API.")
         else:
-            logging.error("Failed to generate test cases or empty response from API.")
-    else:
-        logging.info("No prompt generated for the files.")
+            logging.info(f"No prompt generated for file: {file_name}")
 
 if __name__ == '__main__':
     main()

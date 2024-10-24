@@ -34,14 +34,10 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_MODEL: ${{ secrets.OPENAI_MODEL }}
           OPENAI_MAX_TOKENS: ${{ secrets.OPENAI_MAX_TOKENS }}
-      - name: Check for changes
-        id: check_changes
-        run: |
-          git diff --quiet
-          echo "changes_exist=$?" >> $GITHUB_ENV
+      - name: List files after test generation
+        run: ls -la
       - name: Git status before commit
-        run: |
-          git status
+        run: git status
       - name: Ensure Git is Properly Configured
         run: |
           git config --global user.name "GitHub Actions"
