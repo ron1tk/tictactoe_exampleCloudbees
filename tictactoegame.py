@@ -57,24 +57,28 @@ class TicTacToe:
 
 def play_game():
     game = TicTacToe()
+    print("Welcome to Tic Tac Toe!")
+    print("Enter -1 at any time to reset the game.")
     while True:
         game.print_board()
-        square = input("Turn for {}. Move on which space? (0-{}) ".format(game.current_player, game.board_size*game.board_size - 1))
         try:
-            square = int(square)
+            square = int(input(f"Turn for {game.current_player}. Move on which space? (0-{game.board_size*game.board_size - 1}): "))
+            if square == -1:  # Check if the reset command is entered
+                game.reset_game()
+                continue  # Skip the rest of the loop and start over
             success, msg = game.make_move(square)
             print(msg)
             if success:
                 if msg.startswith("Player"):
                     print("Game Over")
+                    game.print_board()  # Show the final board
                     break
                 elif game.is_board_full():
                     print("It's a tie!")
+                    game.print_board()  # Show the final board
                     break
         except ValueError:
-            print("Please enter a number.")
-    
-    game.print_board()
+            print("Please enter a valid number.")
 
 if __name__ == '__main__':
     play_game()
