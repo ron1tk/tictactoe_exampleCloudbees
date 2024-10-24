@@ -12,6 +12,8 @@ jobs:
     environment: testgeneration  
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch all history
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
@@ -21,7 +23,10 @@ jobs:
       - name: Detect changed files
         id: files
         run: |
-          echo "changed_files=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }})" >> $GITHUB_ENV
+          echo "changed_files=$(git diff --name-only HEAD^ HEAD)" >> $GITHUB_ENV
+      - name: Debug changed files
+        run: |
+          echo "Changed files: ${{ env.changed_files }}"
       - name: Run test generation script
         run: python generate_tests.py ${{ env.changed_files }}
         env:
@@ -33,6 +38,9 @@ jobs:
         run: |
           git diff --quiet
           echo "changes_exist=$?" >> $GITHUB_ENV
+      - name: Git status before commit
+        run: |
+          git status
       - name: Create a new branch
         if: env.changes_exist == '1'
         run: |

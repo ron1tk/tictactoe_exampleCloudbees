@@ -55,6 +55,13 @@ class TicTacToe:
     def is_board_full(self):
         return ' ' not in self.board
 
+    def reset_game(self):
+        self.board = [' ' for _ in range(self.board_size * self.board_size)]
+        self.current_winner = None
+        self.move_history = []
+        self.current_player = 'X'
+        print("Game has been reset!")
+
 def play_game():
     game = TicTacToe()
     print("Welcome to Tic Tac Toe!")
