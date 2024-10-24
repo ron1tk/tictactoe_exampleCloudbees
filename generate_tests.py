@@ -49,29 +49,33 @@ def create_prompt(changed_files: List[str], language: str) -> Optional[str]:
     return prompt
 
 def call_openai_api(prompt: str) -> Optional[Dict[str, Any]]:
-    """Call OpenAI API to generate test cases based on the prompt with retry mechanism."""
+    """Call OpenAI API to generate test cases based on the prompt."""
     api_key = os.getenv('OPENAI_API_KEY')
+    if not api_key:
+        logging.error("OPENAI_API_KEY environment variable is not set")
+        sys.exit("OPENAI_API_KEY environment variable is not set")
+
     headers = {
         'Content-Type': 'application/json',
         'Authorization': f'Bearer {api_key}'
     }
     data = {
-        'model': os.getenv('OPENAI_MODEL', 'gpt-4'),
-        'prompt': prompt,
-        'max_tokens': int(os.getenv('OPENAI_MAX_TOKENS', '2000'))
+        'model': os.getenv('OPENAI_MODEL', 'gpt-3.5-turbo'),  # Default to gpt-3.5-turbo
+        'messages': [
+            {"role": "system", "content": "You are a helpful assistant that generates code tests."},
+            {"role": "user", "content": prompt}
+        ],
+        'max_tokens': int(os.getenv('OPENAI_MAX_TOKENS', '1000'))
     }
 
     try:
-        response = requests.post('https://api.openai.com/v1/completions', headers=headers, json=data)
+        response = requests.post('https://api.openai.com/v1/chat/completions', headers=headers, json=data)
         response.raise_for_status()
         return response.json()
-    except HTTPError as http_err:
-        logging.error(f"HTTP error occurred: {http_err}")
-    except RequestException as req_err:
-        logging.error(f"Request failed: {req_err}")
-    except Exception as err:
-        logging.error(f"An error occurred: {err}")
-    return None
+    except RequestException as e:
+        logging.error(f"API request failed: {e}")
+        return None
+
 
 def main():
     changed_files = get_changed_files()
