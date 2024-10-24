@@ -21,14 +21,24 @@ jobs:
       - name: Detect changed files
         id: files
         run: |
-          echo "::set-output name=changed_files::$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }})"
+          echo "changed_files=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }})" >> $GITHUB_ENV
       - name: Run test generation script
-        run: python generate_tests.py ${{ steps.files.outputs.changed_files }}
+        run: python generate_tests.py ${{ env.changed_files }}
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_MODEL: ${{ secrets.OPENAI_MODEL }}
           OPENAI_MAX_TOKENS: ${{ secrets.OPENAI_MAX_TOKENS }}
+      - name: Check for changes
+        id: check_changes
+        run: |
+          git diff --quiet
+          if [ $? -eq 1 ]
+          then 
+            echo "changes_exist=true" >> $GITHUB_ENV
+          else 
+            echo "changes_exist=false" >> $GITHUB_ENV
       - name: Create a new branch
+        if: env.changes_exist == 'true'
         run: |
           git checkout -b automated-test-branch
           git config --global user.name "GitHub Actions"
@@ -37,6 +47,7 @@ jobs:
           git commit -m "Add generated test cases"
           git push --set-upstream origin automated-test-branch
       - name: Create Pull Request
+        if: env.changes_exist == 'true'
         uses: repo-sync/pull-request@v2
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
