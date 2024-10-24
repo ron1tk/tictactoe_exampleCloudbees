@@ -100,6 +100,7 @@ def play_game():
                     break
                 elif game.is_board_full():
                     print("It's a tie!")
+                    print("Can you believe it !!!!!")
                     game.scores['Draws'] += 1  # Update score for a draw
                     game.print_board()  # Show the final board
                     game.print_scores()  # Print scores after game ends
