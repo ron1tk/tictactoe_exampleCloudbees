@@ -44,10 +44,8 @@ jobs:
         run: |
           changed_files=$(git diff --name-only HEAD^ HEAD | grep -E '\.(py|js|ts|java|cpp|cs)$' || true)
           if [ -n "$changed_files" ]; then
-            echo "changed_files=$(echo $changed_files | tr '\n' ' ')" >> $GITHUB_ENV
-            echo "### DEBUG OUTPUT ###"
-            echo "$changed_files"
-            echo "Formatted changed_files: $(echo $changed_files | tr '\n' ' ')"
+            echo "changed_files=$changed_files" >> $GITHUB_ENV
+            echo "Found changed files: $changed_files"
           else
             echo "No relevant source files changed"
             exit 0
@@ -97,9 +95,9 @@ jobs:
             ## 🤖 Automated Test Generation
             
             Generated test cases for the following files:
-            ```
-            ${{ env.changed_files }}
-            ```
+            
+${{ env.changed_files }}
+
             
             Please review these generated tests for:
             - Correctness
