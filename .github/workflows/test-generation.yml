@@ -1,6 +1,4 @@
 name: Automated Test Generation Pipeline
-
-# Workflow trigger
 on:
   push:
     branches:
@@ -14,31 +12,29 @@ on:
       - '**.cpp'
       - '**.cs'
 
-# Job definition
 jobs:
   generate-tests:
     runs-on: ubuntu-latest
-    environment: testgeneration
+    environment: testgeneration  
     steps:
-      # Checkout repo
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0  # Fetch all history
           token: ${{ secrets.PAT_TOKEN }}  # Use PAT for checkout
-
+      
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.8'
-
+      
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install requests pytest
-
+      
       - name: Create tests directory
         run: mkdir -p tests
-
+      
       - name: Detect changed files
         id: files
         run: |
@@ -50,7 +46,7 @@ jobs:
             echo "No relevant source files changed"
             exit 0
           fi
-
+      
       - name: Run test generation script
         if: env.changed_files != ''
         run: python generate_tests.py "${{ env.changed_files }}"
@@ -58,20 +54,20 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_MODEL: ${{ secrets.OPENAI_MODEL }}
           OPENAI_MAX_TOKENS: ${{ secrets.OPENAI_MAX_TOKENS }}
-
+      
       - name: Create unique branch name
         if: env.changed_files != ''
         run: |
           branch_name="test-gen-$(date +%Y%m%d-%H%M%S)"
           echo "BRANCH_NAME=$branch_name" >> $GITHUB_ENV
-
+      
       - name: Configure Git
         if: env.changed_files != ''
         run: |
           git config --global user.name "GitHub Actions Bot"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${{ secrets.PAT_TOKEN }}@github.com/${{ github.repository }}
-
+      
       - name: Commit and push changes
         if: env.changed_files != ''
         run: |
@@ -84,7 +80,7 @@ jobs:
           else
             echo "No changes to commit"
           fi
-
+      
       - name: Create Pull Request
         if: env.CHANGES_PUSHED == '1'
         uses: repo-sync/pull-request@v2
@@ -95,9 +91,9 @@ jobs:
             ## 🤖 Automated Test Generation
             
             Generated test cases for the following files:
-            
-${{ env.changed_files }}
-
+            ```
+            ${{ env.changed_files }}
+            ```
             
             Please review these generated tests for:
             - Correctness
