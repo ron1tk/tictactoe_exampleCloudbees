@@ -31,6 +31,15 @@ class TicTacToe:
         self.current_player = 'O' if self.current_player == 'X' else 'X'
         return True, "Move successful"
 
+    def undo_move(self):
+        """Undo the last move made, if any."""
+        if not self.move_history:
+            return False, "No moves to undo."
+        last_move, last_player = self.move_history.pop()
+        self.board[last_move] = ' '
+        self.current_player = last_player
+        return True, "Last move undone."
+
     def check_winner(self, square):
         row_ind = square // self.board_size
         col_ind = square % self.board_size
@@ -77,6 +86,10 @@ def play_game():
             if square == -1:  # Check if the reset command is entered
                 game.reset_game()
                 continue  # Skip the rest of the loop and start over
+            elif square == -2:  # Add command to undo the last move
+                success, msg = game.undo_move()
+                print(msg)
+                continue
             success, msg = game.make_move(square)
             print(msg)
             if success:

@@ -1,7 +1,7 @@
-```python
+'python'
 import pytest
 from unittest.mock import patch
-from tic_tac_toe import TicTacToe
+from tictactoegame import TicTacToe
 
 @pytest.fixture
 def tic_tac_toe():
@@ -23,7 +23,7 @@ def test_make_move(tic_tac_toe):
     assert tic_tac_toe.current_player == 'O'  # Check player switch
     assert tic_tac_toe.board[0] == 'X'  # Check if move is made
 
-@patch('tic_tac_toe.TicTacToe.check_winner', return_value=True)
+@patch('tictactoe.TicTacToe.check_winner', return_value=True)
 def test_check_winner(mock_check_winner, tic_tac_toe):
     assert tic_tac_toe.check_winner(0) == True
 
@@ -43,4 +43,3 @@ def test_print_scores(capsys, tic_tac_toe):
     tic_tac_toe.print_scores()
     captured = capsys.readouterr()
     assert captured.out  # Check if scores are printed
-```

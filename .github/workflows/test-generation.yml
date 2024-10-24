@@ -1,4 +1,6 @@
 name: Automated Test Generation Pipeline
+
+#workflow trigger
 on:
   push:
     branches:
@@ -12,11 +14,15 @@ on:
       - '**.cpp'
       - '**.cs'
 
+
+
+      #job definition
 jobs:
   generate-tests:
     runs-on: ubuntu-latest
     environment: testgeneration  
     steps:
+    #checkout repo
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0  # Fetch all history

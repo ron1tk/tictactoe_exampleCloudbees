@@ -35,7 +35,7 @@ class TestGenerator:
             '.js': 'JavaScript',
             '.ts': 'TypeScript',
             '.java': 'Java',
-            '.cpp': 'C++',
+            '++',
             '.cs': 'C#'
         }
         _, ext = os.path.splitext(file_name)
