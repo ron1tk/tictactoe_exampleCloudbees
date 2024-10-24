@@ -2,113 +2,170 @@ import requests
 import os
 import sys
 import logging
+import json
+from pathlib import Path
 from requests.exceptions import RequestException
 from typing import List, Optional, Dict, Any
 
 # Set up logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
 
-def get_changed_files() -> List[str]:
-    """Retrieve list of changed files passed as command-line arguments."""
-    return sys.argv[1].split(' ') if len(sys.argv) > 1 else []
+class TestGenerator:
+    def __init__(self):
+        self.api_key = os.getenv('OPENAI_API_KEY')
+        self.model = os.getenv('OPENAI_MODEL', 'gpt-4-turbo-preview')
+        self.max_tokens = int(os.getenv('OPENAI_MAX_TOKENS', '2000'))
+        
+        if not self.api_key:
+            raise ValueError("OPENAI_API_KEY environment variable is not set")
 
-def detect_language(file_name: str) -> str:
-    """Detect programming language based on file extension."""
-    extensions = {
-        '.py': 'Python',
-        '.js': 'JavaScript',
-        '.ts': 'TypeScript',
-        '.java': 'Java',
-        '.cpp': 'C++',
-        '.cs': 'C#'
-    }
-    _, ext = os.path.splitext(file_name)
-    return extensions.get(ext, 'Unknown')
+    def get_changed_files(self) -> List[str]:
+        """Retrieve list of changed files passed as command-line arguments."""
+        if len(sys.argv) <= 1:
+            return []
+        return [f.strip() for f in sys.argv[1].split() if f.strip()]
 
-def create_prompt(file_name: str, language: str) -> Optional[str]:
-    """Create a language-specific prompt for test generation based on a changed file."""
-    if not file_name:
-        logging.info("No changed file to generate tests for.")
-        return None
+    def detect_language(self, file_name: str) -> str:
+        """Detect programming language based on file extension."""
+        extensions = {
+            '.py': 'Python',
+            '.js': 'JavaScript',
+            '.ts': 'TypeScript',
+            '.java': 'Java',
+            '.cpp': 'C++',
+            '.cs': 'C#'
+        }
+        _, ext = os.path.splitext(file_name)
+        return extensions.get(ext.lower(), 'Unknown')
 
-    # Read the content of the changed file
-    try:
-        with open(file_name, 'r') as f:
-            code_content = f.read()
-    except Exception as e:
-        logging.error(f"Error reading file {file_name}: {e}")
-        return None
+    def get_test_framework(self, language: str) -> str:
+        """Get the appropriate test framework based on language."""
+        frameworks = {
+            'Python': 'pytest',
+            'JavaScript': 'jest',
+            'TypeScript': 'jest',
+            'Java': 'JUnit',
+            'C++': 'Google Test',
+            'C#': 'NUnit'
+        }
+        return frameworks.get(language, 'unknown')
 
-    language_template = {
-        'Python': "Please generate detailed Python unit tests for the following code:\n",
-        'JavaScript': "Please generate detailed JavaScript unit tests for the following code:\n",
-        'TypeScript': "Please generate detailed TypeScript unit tests for the following code:\n",
-        'Java': "Please generate detailed Java unit tests for the following code:\n",
-        'C++': "Please generate detailed C++ unit tests for the following code:\n",
-        'C#': "Please generate detailed C# unit tests for the following code:\n"
-    }
+    def create_prompt(self, file_name: str, language: str) -> Optional[str]:
+        """Create a language-specific prompt for test generation."""
+        try:
+            with open(file_name, 'r') as f:
+                code_content = f.read()
+        except Exception as e:
+            logging.error(f"Error reading file {file_name}: {e}")
+            return None
 
-    prompt = language_template.get(language, "Please generate unit tests for the following code:\n") + code_content
-    logging.info(f"Created prompt for {language}. Length: {len(prompt)} characters")
-    return prompt
+        framework = self.get_test_framework(language)
+        
+        prompt = f"""Generate comprehensive unit tests for the following {language} code using {framework}.
 
-def call_openai_api(prompt: str) -> Optional[str]:
-    """Call OpenAI API to generate test cases based on the prompt."""
-    api_key = os.getenv('OPENAI_API_KEY')
-    if not api_key:
-        logging.error("OPENAI_API_KEY environment variable is not set")
-        sys.exit("OPENAI_API_KEY environment variable is not set")
+Requirements:
+1. Include edge cases, normal cases, and error cases
+2. Use mocking where appropriate for external dependencies
+3. Include setup and teardown if needed
+4. Add descriptive test names and docstrings
+5. Follow {framework} best practices
+6. Ensure high code coverage
+7. Test both success and failure scenarios
 
-    headers = {
-        'Content-Type': 'application/json',
-        'Authorization': f'Bearer {api_key}'
-    }
-    data = {
-        'model': os.getenv('OPENAI_MODEL', 'gpt-3.5-turbo'),  # Default to gpt-3.5-turbo
-        'messages': [
-            {"role": "system", "content": "You are a helpful assistant that generates code tests."},
-            {"role": "user", "content": prompt}
-        ],
-        'max_tokens': int(os.getenv('OPENAI_MAX_TOKENS', '1000'))
-    }
+Code to test:
 
-    try:
-        response = requests.post('https://api.openai.com/v1/chat/completions', headers=headers, json=data)
-        response.raise_for_status()
-        # Extract the generated content
-        return response.json()['choices'][0]['message']['content']
-    except RequestException as e:
-        logging.error(f"API request failed: {e}")
-        return None
+{code_content}
 
-def save_test_cases(file_name: str, test_cases: str):
-    """Save generated test cases to a new file."""
-    base_name = os.path.basename(file_name)
-    name, ext = os.path.splitext(base_name)
-    output_file = f"test_{name}{ext}"
-    with open(output_file, 'w') as f:
-        f.write(test_cases)
-    logging.info(f"Test cases saved to {output_file}")
+Generate only the test code without any explanations."""
 
-def main():
-    changed_files = get_changed_files()
-    if not changed_files:
-        logging.info("No files changed.")
-        return
+        logging.info(f"Created prompt for {language} using {framework}. Length: {len(prompt)} characters")
+        return prompt
 
-    for file_name in changed_files:
-        language = detect_language(file_name)
-        prompt = create_prompt(file_name, language)
-        if prompt:
-            test_cases = call_openai_api(prompt)
-            if test_cases:
-                print(f"Generated Test Cases for {file_name}:\n{test_cases}")
-                # Save the test cases to a file
-                save_test_cases(file_name, test_cases)
-            else:
-                logging.error("Failed to generate test cases or empty response from API.")
-        else:
-            logging.info(f"No prompt generated for file: {file_name}")
+    def call_openai_api(self, prompt: str) -> Optional[str]:
+        """Call OpenAI API to generate test cases."""
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {self.api_key}'
+        }
+        
+        data = {
+            'model': self.model,
+            'messages': [
+                {"role": "system", "content": "You are a senior software engineer specialized in writing comprehensive test suites."},
+                {"role": "user", "content": prompt}
+            ],
+            'max_tokens': self.max_tokens,
+            'temperature': 0.7  # Balance between creativity and consistency
+        }
+
+        try:
+            response = requests.post(
+                'https://api.openai.com/v1/chat/completions',
+                headers=headers,
+                json=data,
+                timeout=30
+            )
+            response.raise_for_status()
+            return response.json()['choices'][0]['message']['content']
+        except RequestException as e:
+            logging.error(f"API request failed: {e}")
+            return None
+
+    def save_test_cases(self, file_name: str, test_cases: str, language: str):
+        """Save generated test cases to appropriate directory structure."""
+        # Create tests directory if it doesn't exist
+        tests_dir = Path('tests')
+        tests_dir.mkdir(exist_ok=True)
+
+        # Create language-specific subdirectory
+        lang_dir = tests_dir / language.lower()
+        lang_dir.mkdir(exist_ok=True)
+
+        # Generate test file name
+        base_name = Path(file_name).stem
+        extension = '.py' if language == 'Python' else Path(file_name).suffix
+        test_file = lang_dir / f"test_{base_name}{extension}"
+
+        try:
+            with open(test_file, 'w') as f:
+                f.write(test_cases)
+            logging.info(f"Test cases saved to {test_file}")
+        except Exception as e:
+            logging.error(f"Error saving test cases to {test_file}: {e}")
+
+    def run(self):
+        """Main execution method."""
+        changed_files = self.get_changed_files()
+        if not changed_files:
+            logging.info("No files changed.")
+            return
+
+        for file_name in changed_files:
+            try:
+                language = self.detect_language(file_name)
+                if language == 'Unknown':
+                    logging.warning(f"Unsupported file type: {file_name}")
+                    continue
+
+                logging.info(f"Processing {file_name} ({language})")
+                prompt = self.create_prompt(file_name, language)
+                
+                if prompt:
+                    test_cases = self.call_openai_api(prompt)
+                    if test_cases:
+                        self.save_test_cases(file_name, test_cases, language)
+                    else:
+                        logging.error(f"Failed to generate test cases for {file_name}")
+            except Exception as e:
+                logging.error(f"Error processing {file_name}: {e}")
 
 if __name__ == '__main__':
-    main()
+    try:
+        generator = TestGenerator()
+        generator.run()
+    except Exception as e:
+        logging.error(f"Fatal error: {e}")
+        sys.exit(1)

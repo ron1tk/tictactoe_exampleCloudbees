@@ -1,10 +1,16 @@
 name: Automated Test Generation Pipeline
-
 on:
   push:
     branches:
       - main
       - "feature/*"
+    paths:
+      - '**.py'
+      - '**.js'
+      - '**.ts'
+      - '**.java'
+      - '**.cpp'
+      - '**.cs'
 
 jobs:
   generate-tests:
@@ -14,47 +20,85 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0  # Fetch all history
+      
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.8'
+      
       - name: Install dependencies
-        run: pip install requests
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests pytest
+      
+      - name: Create tests directory
+        run: mkdir -p tests
+      
       - name: Detect changed files
         id: files
         run: |
-          changed_files=$(git diff --name-only HEAD^ HEAD)
-          echo "changed_files=$changed_files" >> $GITHUB_ENV
-      - name: Debug changed files
-        run: |
-          echo "Changed files: ${{ env.changed_files }}"
+          changed_files=$(git diff --name-only HEAD^ HEAD | grep -E '\.(py|js|ts|java|cpp|cs)$' || true)
+          if [ -n "$changed_files" ]; then
+            echo "changed_files=$changed_files" >> $GITHUB_ENV
+            echo "Found changed files: $changed_files"
+          else
+            echo "No relevant source files changed"
+            exit 0
+          fi
+      
       - name: Run test generation script
-        run: python generate_tests.py ${{ env.changed_files }}
+        if: env.changed_files != ''
+        run: python generate_tests.py "${{ env.changed_files }}"
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_MODEL: ${{ secrets.OPENAI_MODEL }}
           OPENAI_MAX_TOKENS: ${{ secrets.OPENAI_MAX_TOKENS }}
-      - name: List files after test generation
-        run: ls -la
-      - name: Git status before commit
-        run: git status
-      - name: Ensure Git is Properly Configured
+      
+      - name: Create unique branch name
+        if: env.changed_files != ''
         run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
-      - name: Create a new branch
-        if: env.changes_exist == '1'
+          branch_name="test-gen-$(date +%Y%m%d-%H%M%S)"
+          echo "BRANCH_NAME=$branch_name" >> $GITHUB_ENV
+      
+      - name: Configure Git
+        if: env.changed_files != ''
         run: |
-          git checkout -b automated-test-branch
-          git add .
-          git commit -m "Add generated test cases"
-          git push --set-upstream origin automated-test-branch
+          git config --global user.name "GitHub Actions Bot"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+      
+      - name: Commit and push changes
+        if: env.changed_files != ''
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            git checkout -b ${{ env.BRANCH_NAME }}
+            git add tests/
+            git commit -m "Add generated test cases for recent changes"
+            git push origin ${{ env.BRANCH_NAME }}
+            echo "CHANGES_PUSHED=1" >> $GITHUB_ENV
+          else
+            echo "No changes to commit"
+          fi
+      
       - name: Create Pull Request
-        if: env.changes_exist == '1'
+        if: env.CHANGES_PUSHED == '1'
         uses: repo-sync/pull-request@v2
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          pr_title: "Add generated test cases"
-          pr_body: "Please review the newly generated test cases"
+          pr_title: "✨ New Test Cases Generated"
+          pr_body: |
+            ## 🤖 Automated Test Generation
+            
+            Generated test cases for the following files:
+            ```
+            ${{ env.changed_files }}
+            ```
+            
+            Please review these generated tests for:
+            - Correctness
+            - Coverage
+            - Edge cases
+            - Error handling
+            
+            Generated using OpenAI model: ${{ env.OPENAI_MODEL }}
           destination_branch: "main"
-          source_branch: "automated-test-branch"
+          source_branch: ${{ env.BRANCH_NAME }}
