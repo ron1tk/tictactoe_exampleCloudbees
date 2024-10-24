@@ -32,13 +32,9 @@ jobs:
         id: check_changes
         run: |
           git diff --quiet
-          if [ $? -eq 1 ]
-          then 
-            echo "changes_exist=true" >> $GITHUB_ENV
-          else 
-            echo "changes_exist=false" >> $GITHUB_ENV
+          echo "changes_exist=$?" >> $GITHUB_ENV
       - name: Create a new branch
-        if: env.changes_exist == 'true'
+        if: env.changes_exist == '1'
         run: |
           git checkout -b automated-test-branch
           git config --global user.name "GitHub Actions"
@@ -47,7 +43,7 @@ jobs:
           git commit -m "Add generated test cases"
           git push --set-upstream origin automated-test-branch
       - name: Create Pull Request
-        if: env.changes_exist == 'true'
+        if: env.changes_exist == '1'
         uses: repo-sync/pull-request@v2
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
