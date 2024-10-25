@@ -9,10 +9,24 @@ class TicTacToe:
         self.move_history = []
         self.scores = {'X': 0, 'O': 0, 'Draws': 0}
         self.current_player = 'X'
+        self.player_symbols = {'X': 'X', 'O': 'O'}  # New feature: customizable symbols
+
+    def set_player_symbols(self, player1_symbol, player2_symbol):
+        """Set custom symbols for players."""
+        if player1_symbol == player2_symbol:
+            print("Players must have different symbols.")
+            return False
+        self.player_symbols['X'] = player1_symbol
+        self.player_symbols['O'] = player2_symbol
+        print(f"Player 1 will be '{player1_symbol}' and Player 2 will be '{player2_symbol}'.")
+        return True
 
     def print_board(self):
         for row in range(self.board_size):
-            print('| ' + ' | '.join(self.board[row*self.board_size:(row+1)*self.board_size]) + ' |')
+            row_display = []
+            for symbol in self.board[row*self.board_size:(row+1)*self.board_size]:
+                row_display.append(self.player_symbols.get(symbol, symbol))
+            print('| ' + ' | '.join(row_display) + ' |')
 
     def validate_move(self, square):
         if not 0 <= square < self.board_size * self.board_size:
@@ -30,7 +44,7 @@ class TicTacToe:
         if self.check_winner(square):
             self.current_winner = self.current_player
             self.scores[self.current_player] += 1  # Update score for the winner
-            return True, "Player {} wins!".format(self.current_player)
+            return True, f"Player {self.player_symbols[self.current_player]} wins!"
         self.current_player = 'O' if self.current_player == 'X' else 'X'
         return True, "Move successful"
 
@@ -76,7 +90,7 @@ class TicTacToe:
         print("Game has been reset!")
 
     def print_scores(self):
-        print(f"Scores: X - {self.scores['X']}, O - {self.scores['O']}, Draws - {self.scores['Draws']}")
+        print(f"Scores: {self.player_symbols['X']} - {self.scores['X']}, {self.player_symbols['O']} - {self.scores['O']}, Draws - {self.scores['Draws']}")
 
     def reset_scores(self):
         """Reset the scores for both players."""
@@ -88,7 +102,7 @@ class TicTacToe:
         moves = self.available_moves()
         if moves:
             suggestion = random.choice(moves)
-            print(f"Suggested move for {self.current_player}: {suggestion}")
+            print(f"Suggested move for {self.player_symbols[self.current_player]}: {suggestion}")
             return suggestion
         return None
 
@@ -98,7 +112,8 @@ class TicTacToe:
             "board": self.board,
             "scores": self.scores,
             "current_player": self.current_player,
-            "move_history": self.move_history
+            "move_history": self.move_history,
+            "player_symbols": self.player_symbols
         }
         with open(filename, "w") as f:
             json.dump(game_state, f)
@@ -113,6 +128,7 @@ class TicTacToe:
                 self.scores = game_state["scores"]
                 self.current_player = game_state["current_player"]
                 self.move_history = game_state["move_history"]
+                self.player_symbols = game_state.get("player_symbols", {'X': 'X', 'O': 'O'})
             print(f"Game loaded from {filename}.")
         except FileNotFoundError:
             print(f"No saved game found at {filename}.")
@@ -125,10 +141,11 @@ def play_game():
     print("Enter -3 to get a move suggestion.")
     print("Enter -4 to save the game.")
     print("Enter -5 to load a saved game.")
+    print("Enter -6 to set custom player symbols.")
     while True:
         game.print_board()
         try:
-            square = int(input(f"Turn for {game.current_player}. Move on which space? (0-{game.board_size*game.board_size - 1}): "))
+            square = int(input(f"Turn for {game.player_symbols[game.current_player]}. Move on which space? (0-{game.board_size*game.board_size - 1}): "))
             if square == -1:  # Check if the reset command is entered
                 game.reset_game()
                 continue
@@ -144,6 +161,11 @@ def play_game():
                 continue
             elif square == -5:  # Load a saved game
                 game.load_game()
+                continue
+            elif square == -6:  # Set custom player symbols
+                player1_symbol = input("Enter symbol for Player 1 (X): ")
+                player2_symbol = input("Enter symbol for Player 2 (O): ")
+                game.set_player_symbols(player1_symbol, player2_symbol)
                 continue
             success, msg = game.make_move(square)
             print(msg)
