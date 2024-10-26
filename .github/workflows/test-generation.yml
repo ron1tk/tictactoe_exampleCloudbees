@@ -79,6 +79,7 @@ jobs:
             echo "CHANGES_PUSHED=1" >> $GITHUB_ENV
           else
             echo "No changes to commit"
+          fi
       
       - name: Install GitHub CLI
         run: |
