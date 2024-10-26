@@ -81,28 +81,26 @@ jobs:
             echo "No changes to commit"
           fi
       
-      - name: Install GitHub CLI
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gh
-      
       - name: Create Pull Request
         if: env.CHANGES_PUSHED == '1'
-        run: |
-          gh auth login --with-token <<< "${{ secrets.PAT_TOKEN }}"
-          gh pr create --title "✨ New Test Cases Generated" --body "
-          ## 🤖 Automated Test Generation
-          
-          Generated test cases for the following files:
-          ```
-          ${{ env.changed_files }}
-          ```
-          
-          Please review these generated tests for:
-          - Correctness
-          - Coverage
-          - Edge cases
-          - Error handling
-          
-          Generated using OpenAI model: ${{ env.OPENAI_MODEL }}
-          " --base main --head ${{ env.BRANCH_NAME }}
+        uses: repo-sync/pull-request@v2
+        with:
+          github_token: ${{ secrets.PAT_TOKEN }}  # Use PAT for PR creation
+          pr_title: "✨ New Test Cases Generated"
+          pr_body: |
+            ## 🤖 Automated Test Generation
+            
+            Generated test cases for the following files:
+            ```
+            ${{ env.changed_files }}
+            ```
+            
+            Please review these generated tests for:
+            - Correctness
+            - Coverage
+            - Edge cases
+            - Error handling
+            
+            Generated using OpenAI model: ${{ env.OPENAI_MODEL }}
+          destination_branch: "main"
+          source_branch: ${{ env.BRANCH_NAME }}
