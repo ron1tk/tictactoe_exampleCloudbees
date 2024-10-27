@@ -90,7 +90,7 @@ class TicTacToe:
         print("Game has been reset!")
 
     def print_scores(self):
-        print(f"Scores: {self.player_symbols['X']} - {self.scores['X']}, {self.player_symbols['O']} - {self.scores['O']}, Draws - {self.scores['Draws']}")
+        print(f"Scores:{self.player_symbols['X']} - {self.scores['X']}, {self.player_symbols['O']} - {self.scores['O']}, Draws - {self.scores['Draws']}")
 
     def reset_scores(self):
         """Reset the scores for both players."""
