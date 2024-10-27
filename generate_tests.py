@@ -154,13 +154,18 @@ Generate only the test code without any explanations."""
                 prompt = self.create_prompt(file_name, language)
                 
                 if prompt:
+                    # Generate test cases from the API
                     test_cases = self.call_openai_api(prompt)
+                    
+                    # Clean up quotation marks if test cases were generated
                     if test_cases:
+                        test_cases = test_cases.replace("“", '"').replace("”", '"')
                         self.save_test_cases(file_name, test_cases, language)
                     else:
                         logging.error(f"Failed to generate test cases for {file_name}")
             except Exception as e:
                 logging.error(f"Error processing {file_name}: {e}")
+
 
 if __name__ == '__main__':
     try:
