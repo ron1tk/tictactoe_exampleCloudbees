@@ -109,10 +109,14 @@ Generate only the test code without any explanations."""
                 timeout=30
             )
             response.raise_for_status()
-            return response.json()['choices'][0]['message']['content']
+            generated_text = response.json()['choices'][0]['message']['content']
+            # Replace curly quotes with straight quotes
+            normalized_text = generated_text.replace('“', '"').replace('”', '"').replace("‘", "'").replace("’", "'")
+            return normalized_text
         except RequestException as e:
             logging.error(f"API request failed: {e}")
             return None
+
 
     def save_test_cases(self, file_name: str, test_cases: str, language: str):
         """Save generated test cases to appropriate directory structure."""
