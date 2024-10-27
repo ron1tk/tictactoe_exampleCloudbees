@@ -134,7 +134,7 @@ Generate only the test code without any explanations."""
         test_file = lang_dir / f"test_{base_name}{extension}"
 
         try:
-            with open(test_file, 'w') as f:
+            with open(test_file, 'w', encodings='utf-8') as f:
                 f.write(test_cases)
             logging.info(f"Test cases saved to {test_file}")
         except Exception as e:
