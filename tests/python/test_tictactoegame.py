@@ -1,45 +1,53 @@
-'python'
+```python
 import pytest
 from unittest.mock import patch
-from tictactoegame import TicTacToe
+from tic_tac_toe import TicTacToe
 
 @pytest.fixture
-def tic_tac_toe():
+def new_game():
     return TicTacToe()
 
-def test_print_board(capsys, tic_tac_toe):
-    tic_tac_toe.print_board()
-    captured = capsys.readouterr()
-    assert captured.out  # Check if board is printed
+def test_set_player_symbols(new_game):
+    assert new_game.set_player_symbols('X', 'O') == True
+    assert new_game.set_player_symbols('X', 'X') == False
 
-def test_validate_move(tic_tac_toe):
-    assert tic_tac_toe.validate_move(0) == (True, "Valid move")
-    assert tic_tac_toe.validate_move(10) == (True, "Valid move")
-    assert tic_tac_toe.validate_move(-1) == (False, "Move must be between 0 and 8")
-    assert tic_tac_toe.validate_move(5) == (False, "Square already occupied")
+def test_validate_move(new_game):
+    assert new_game.validate_move(5) == (True, "Valid move")
+    assert new_game.validate_move(10) == (False, "Move must be between 0 and 8")
+    assert new_game.validate_move(4) == (False, "Square already occupied")
 
-def test_make_move(tic_tac_toe):
-    tic_tac_toe.make_move(0)
-    assert tic_tac_toe.current_player == 'O'  # Check player switch
-    assert tic_tac_toe.board[0] == 'X'  # Check if move is made
+def test_make_move(new_game):
+    assert new_game.make_move(0) == (True, "Move successful")
+    assert new_game.make_move(4) == (True, "Move successful")
+    assert new_game.make_move(8) == (True, "Player X wins!")
 
-@patch('tictactoe.TicTacToe.check_winner', return_value=True)
-def test_check_winner(mock_check_winner, tic_tac_toe):
-    assert tic_tac_toe.check_winner(0) == True
+def test_undo_move(new_game):
+    new_game.make_move(0)
+    assert new_game.undo_move() == (True, "Last move undone")
+    assert new_game.undo_move() == (False, "No moves to undo")
 
-def test_available_moves(tic_tac_toe):
-    tic_tac_toe.board = ['X', 'O', ' ', ' ', 'X', 'O', 'O', 'X', 'O']
-    assert tic_tac_toe.available_moves() == [2, 3]
+def test_check_winner(new_game):
+    new_game.board = ['X', 'O', ' ', 'O', 'X', ' ', 'X', 'O', 'X']
+    assert new_game.check_winner(0) == True
+    assert new_game.check_winner(4) == True
+    assert new_game.check_winner(8) == True
+    assert new_game.check_winner(2) == False
 
-def test_is_board_full(tic_tac_toe):
-    tic_tac_toe.board = ['X', 'O', 'X', 'O', 'X', 'O', 'O', 'X', 'O']
-    assert tic_tac_toe.is_board_full() == True
+def test_available_moves(new_game):
+    new_game.board = ['X', 'O', ' ', 'O', 'X', ' ', 'X', 'O', 'X']
+    assert new_game.available_moves() == [2, 5]
 
-def test_reset_game(tic_tac_toe):
-    tic_tac_toe.reset_game()
-    assert tic_tac_toe.board == [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ']
+def test_is_board_full(new_game):
+    new_game.board = ['X', 'O', 'X', 'O', 'X', 'O', 'X', 'O', 'X']
+    assert new_game.is_board_full() == True
 
-def test_print_scores(capsys, tic_tac_toe):
-    tic_tac_toe.print_scores()
-    captured = capsys.readouterr()
-    assert captured.out  # Check if scores are printed
+@patch('builtins.input', side_effect=['X', 'O'])
+def test_play_game(mock_input):
+    play_game()
+
+def test_save_and_load_game(new_game, tmp_path):
+    new_game.save_game(tmp_path / "test_save.json")
+    new_game.board = ['X', 'O', 'X', 'O', 'X', 'O', 'X', 'O', 'X']
+    new_game.load_game(tmp_path / "test_save.json")
+    assert new_game.board == ['X', 'O', ' ', 'O', 'X', ' ', 'X', 'O', 'X']
+```
