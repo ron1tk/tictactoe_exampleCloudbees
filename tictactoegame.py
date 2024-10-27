@@ -9,7 +9,7 @@ class TicTacToe:
         self.move_history = []
         self.scores = {'X': 0, 'O': 0, 'Draws': 0}
         self.current_player = 'X'
-        self.player_symbols = {'X': 'X', 'O': 'O'}  # New feature: customizable symbols
+        self.player_symbols = {'X': 'X', 'O': 'O'}  # New feature:customizable symbols
 
     def set_player_symbols(self, player1_symbol, player2_symbol):
         """Set custom symbols for players."""
