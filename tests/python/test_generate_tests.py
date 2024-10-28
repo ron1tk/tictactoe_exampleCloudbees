@@ -1,4 +1,4 @@
-```python
+``` python
 import pytest
 from unittest.mock import patch, Mock
 from generator import TestGenerator
@@ -94,4 +94,3 @@ def test_run_fatal_error(test_generator, caplog):
     with patch('generator.TestGenerator.run', side_effect=Exception('Fatal error')):
         TestGenerator.run()
         assert "Fatal error" in caplog.text
-```

@@ -94,8 +94,14 @@ Generate only the test code without any explanations."""
         data = {
             'model': self.model,
             'messages': [
-                {"role": "system", "content": "You are a senior software engineer specialized in writing comprehensive test suites."},
-                {"role": "user", "content": prompt}
+                {
+                    "role": "system",
+                    "content": "You are a senior software engineer specialized in writing comprehensive test suites."
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
             ],
             'max_tokens': self.max_tokens,
             'temperature': 0.7  # Balance between creativity and consistency
@@ -110,8 +116,27 @@ Generate only the test code without any explanations."""
             )
             response.raise_for_status()
             generated_text = response.json()['choices'][0]['message']['content']
+
             # Replace curly quotes with straight quotes
             normalized_text = generated_text.replace('“', '"').replace('”', '"').replace("‘", "'").replace("’", "'")
+
+            # Remove markdown code blocks if present
+            if normalized_text.startswith('```'):
+                # Find the index of the first newline after ```
+                first_newline_index = normalized_text.find('\n', 3)
+                if first_newline_index != -1:
+                    # Remove the ``` and language identifier line
+                    normalized_text = normalized_text[first_newline_index+1:]
+                else:
+                    # If there's no newline, remove the first line
+                    normalized_text = normalized_text[3:]
+                # Remove the ending ```
+                if normalized_text.endswith('```'):
+                    normalized_text = normalized_text[:-3]
+
+            # Strip any leading/trailing whitespace
+            normalized_text = normalized_text.strip()
+
             return normalized_text
         except RequestException as e:
             logging.error(f"API request failed: {e}")
