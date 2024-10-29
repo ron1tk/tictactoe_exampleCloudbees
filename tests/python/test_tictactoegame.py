@@ -1,53 +1,78 @@
-```python
 import pytest
 from unittest.mock import patch
-from tic_tac_toe import TicTacToe
+
+from tictactoe import TicTacToe
 
 @pytest.fixture
-def new_game():
+def game():
     return TicTacToe()
 
-def test_set_player_symbols(new_game):
-    assert new_game.set_player_symbols('X', 'O') == True
-    assert new_game.set_player_symbols('X', 'X') == False
+def test_set_player_symbols():
+    game = TicTacToe()
+    assert game.set_player_symbols('X', 'O') == True
+    assert game.set_player_symbols('X', 'X') == False
 
-def test_validate_move(new_game):
-    assert new_game.validate_move(5) == (True, "Valid move")
-    assert new_game.validate_move(10) == (False, "Move must be between 0 and 8")
-    assert new_game.validate_move(4) == (False, "Square already occupied")
+def test_validate_move():
+    game = TicTacToe()
+    assert game.validate_move(5) == (True, "Valid move")
+    assert game.validate_move(-1) == (False, "Move must be between 0 and 8")
 
-def test_make_move(new_game):
-    assert new_game.make_move(0) == (True, "Move successful")
-    assert new_game.make_move(4) == (True, "Move successful")
-    assert new_game.make_move(8) == (True, "Player X wins!")
+def test_make_move():
+    game = TicTacToe()
+    assert game.make_move(4) == (True, "Move successful")
+    assert game.make_move(4) == (False, "Square already occupied")
 
-def test_undo_move(new_game):
-    new_game.make_move(0)
-    assert new_game.undo_move() == (True, "Last move undone")
-    assert new_game.undo_move() == (False, "No moves to undo")
+def test_undo_move():
+    game = TicTacToe()
+    game.make_move(4)
+    assert game.undo_move() == (True, "Last move undone")
+    assert game.undo_move() == (False, "No moves to undo")
 
-def test_check_winner(new_game):
-    new_game.board = ['X', 'O', ' ', 'O', 'X', ' ', 'X', 'O', 'X']
-    assert new_game.check_winner(0) == True
-    assert new_game.check_winner(4) == True
-    assert new_game.check_winner(8) == True
-    assert new_game.check_winner(2) == False
+def test_check_winner():
+    game = TicTacToe()
+    game.board = ['X', 'O', 'X', ' ', 'O', 'X', ' ', ' ', 'X']
+    assert game.check_winner(8) == True
+    assert game.check_winner(3) == False
 
-def test_available_moves(new_game):
-    new_game.board = ['X', 'O', ' ', 'O', 'X', ' ', 'X', 'O', 'X']
-    assert new_game.available_moves() == [2, 5]
+def test_available_moves():
+    game = TicTacToe()
+    game.board = ['X', 'O', 'X', ' ', 'O', 'X', ' ', ' ', 'X']
+    assert game.available_moves() == [3, 6, 7]
 
-def test_is_board_full(new_game):
-    new_game.board = ['X', 'O', 'X', 'O', 'X', 'O', 'X', 'O', 'X']
-    assert new_game.is_board_full() == True
+def test_is_board_full():
+    game = TicTacToe()
+    game.board = ['X', 'O', 'X', 'O', 'X', 'O', 'X', 'O', 'X']
+    assert game.is_board_full() == True
+    game.board = ['X', 'O', 'X', 'O', 'X', 'O', 'X', 'O', ' ']
+    assert game.is_board_full() == False
 
-@patch('builtins.input', side_effect=['X', 'O'])
-def test_play_game(mock_input):
-    play_game()
+def test_reset_game():
+    game = TicTacToe()
+    game.make_move(4)
+    game.reset_game()
+    assert game.board == [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ']
 
-def test_save_and_load_game(new_game, tmp_path):
-    new_game.save_game(tmp_path / "test_save.json")
-    new_game.board = ['X', 'O', 'X', 'O', 'X', 'O', 'X', 'O', 'X']
-    new_game.load_game(tmp_path / "test_save.json")
-    assert new_game.board == ['X', 'O', ' ', 'O', 'X', ' ', 'X', 'O', 'X']
-```
+def test_reset_scores():
+    game = TicTacToe()
+    game.scores = {'X': 2, 'O': 1, 'Draws': 0}
+    game.reset_scores()
+    assert game.scores == {'X': 0, 'O': 0, 'Draws': 0}
+
+@patch('random.choice')
+def test_suggest_move(mock_choice):
+    mock_choice.return_value = 3
+    game = TicTacToe()
+    game.board = ['X', 'O', 'X', 'O', 'X', 'O', 'X', 'O', ' ']
+    assert game.suggest_move() == 3
+
+@patch('json.dump')
+def test_save_game(mock_dump):
+    game = TicTacToe()
+    game.save_game("test_save.json")
+    mock_dump.assert_called()
+
+@patch('json.load')
+def test_load_game(mock_load):
+    game = TicTacToe()
+    game.load_game("test_load.json")
+    mock_load.assert_called()
