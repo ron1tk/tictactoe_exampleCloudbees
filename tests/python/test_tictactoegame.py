@@ -1,7 +1,13 @@
+import sys
+import os
+
+# Adjust the path to ensure Python can find the module tictactoegame
+# This goes two levels up from the current directory, reaching the root of the project
+sys.path.insert(0, os.path.abspath('../../'))
+
 import pytest
 from unittest.mock import patch
-
-from tictactoe import TicTacToe
+from tictactoegame import TicTacToe  
 
 @pytest.fixture
 def game():

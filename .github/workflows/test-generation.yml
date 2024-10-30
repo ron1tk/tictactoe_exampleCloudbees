@@ -67,6 +67,10 @@ jobs:
           git config --global user.name "GitHub Actions Bot"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${{ secrets.PAT_TOKEN }}@github.com/${{ github.repository }}
+          
+      - name: Show git status  # This is the new step
+        if: env.changed_files != ''
+        run: git status
       
       - name: Commit and push changes
         if: env.changed_files != ''
