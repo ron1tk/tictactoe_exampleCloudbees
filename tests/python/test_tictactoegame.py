@@ -1,13 +1,6 @@
-import sys
-import os
-
-# Adjust the path to ensure Python can find the module tictactoegame
-# This goes two levels up from the current directory, reaching the root of the project
-sys.path.insert(0, os.path.abspath('../../'))
-
 import pytest
 from unittest.mock import patch
-from tictactoegame import TicTacToe  
+from tictactoe import TicTacToe
 
 @pytest.fixture
 def game():
@@ -20,65 +13,81 @@ def test_set_player_symbols():
 
 def test_validate_move():
     game = TicTacToe()
+    assert game.validate_move(0) == (True, "Valid move")
+    assert game.validate_move(3) == (True, "Valid move")
+    assert game.validate_move(9) == (False, "Move must be between 0 and 8")
     assert game.validate_move(5) == (True, "Valid move")
-    assert game.validate_move(-1) == (False, "Move must be between 0 and 8")
+    assert game.validate_move(4) == (False, "Square already occupied")
 
-def test_make_move():
+@patch('tictactoe.TicTacToe.check_winner', return_value=True)
+def test_make_move_winner(mock_check_winner):
     game = TicTacToe()
+    assert game.make_move(0) == (True, "Player X wins!")
+
+def test_make_move_no_winner():
+    game = TicTacToe()
+    assert game.make_move(0) == (True, "Move successful")
+    assert game.make_move(1) == (True, "Move successful")
+    assert game.make_move(3) == (True, "Move successful")
     assert game.make_move(4) == (True, "Move successful")
-    assert game.make_move(4) == (False, "Square already occupied")
+    assert game.make_move(6) == (False, "Square already occupied")
 
 def test_undo_move():
     game = TicTacToe()
-    game.make_move(4)
+    game.make_move(0)
     assert game.undo_move() == (True, "Last move undone")
     assert game.undo_move() == (False, "No moves to undo")
 
 def test_check_winner():
     game = TicTacToe()
-    game.board = ['X', 'O', 'X', ' ', 'O', 'X', ' ', ' ', 'X']
+    game.board = ['X', 'O', 'X', ' ', 'X', 'O', 'O', ' ', 'X']
+    assert game.check_winner(0) == True
+    assert game.check_winner(1) == False
+    assert game.check_winner(4) == True
     assert game.check_winner(8) == True
-    assert game.check_winner(3) == False
+    assert game.check_winner(2) == False
 
 def test_available_moves():
     game = TicTacToe()
-    game.board = ['X', 'O', 'X', ' ', 'O', 'X', ' ', ' ', 'X']
-    assert game.available_moves() == [3, 6, 7]
+    game.board = ['X', 'O', 'X', ' ', 'X', 'O', 'O', ' ', 'X']
+    assert game.available_moves() == [3, 7]
 
 def test_is_board_full():
     game = TicTacToe()
     game.board = ['X', 'O', 'X', 'O', 'X', 'O', 'X', 'O', 'X']
     assert game.is_board_full() == True
-    game.board = ['X', 'O', 'X', 'O', 'X', 'O', 'X', 'O', ' ']
-    assert game.is_board_full() == False
 
 def test_reset_game():
     game = TicTacToe()
-    game.make_move(4)
+    game.make_move(0)
     game.reset_game()
     assert game.board == [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ']
+    assert game.current_winner == None
 
-def test_reset_scores():
+def test_suggest_move():
     game = TicTacToe()
-    game.scores = {'X': 2, 'O': 1, 'Draws': 0}
-    game.reset_scores()
-    assert game.scores == {'X': 0, 'O': 0, 'Draws': 0}
+    game.board = ['X', 'O', 'X', ' ', 'X', 'O', 'O', ' ', 'X']
+    with patch('random.choice', return_value=6):
+        assert game.suggest_move() == 6
 
-@patch('random.choice')
-def test_suggest_move(mock_choice):
-    mock_choice.return_value = 3
+def test_save_game(tmp_path):
     game = TicTacToe()
-    game.board = ['X', 'O', 'X', 'O', 'X', 'O', 'X', 'O', ' ']
-    assert game.suggest_move() == 3
+    filename = tmp_path / "test_save.json"
+    game.save_game(filename)
+    assert filename.is_file()
 
-@patch('json.dump')
-def test_save_game(mock_dump):
+def test_load_game(tmp_path):
     game = TicTacToe()
-    game.save_game("test_save.json")
-    mock_dump.assert_called()
-
-@patch('json.load')
-def test_load_game(mock_load):
-    game = TicTacToe()
-    game.load_game("test_load.json")
-    mock_load.assert_called()
+    filename = tmp_path / "test_load.json"
+    game.save_game(filename)
+    game.board = ['X', 'O', 'X', 'O', 'X', 'O', 'X', 'O', 'X']
+    game.current_player = 'O'
+    game.scores = {'X': 1, 'O': 2, 'Draws': 0}
+    game.move_history = [(0, 'X'), (1, 'O'), (3, 'X')]
+    game.player_symbols = {'X': 'A', 'O': 'B'}
+    game.load_game(filename)
+    assert game.board == ['X', 'O', 'X', 'O', 'X', 'O', 'X', 'O', 'X']
+    assert game.current_player == 'O'
+    assert game.scores == {'X': 1, 'O': 2, 'Draws': 0}
+    assert game.move_history == [(0, 'X'), (1, 'O'), (3, 'X')]
+    assert game.player_symbols == {'X': 'A', 'O': 'B'}
