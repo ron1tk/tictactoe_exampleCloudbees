@@ -133,17 +133,7 @@ class TicTacToe:
         except FileNotFoundError:
             print(f"No saved game found at {filename}.")
 
-    def replay_game(self):
-            if not self.move_history:
-                print("No game to replay.")
-                return
-            print("Replaying the game...")
-            self.board = [' ' for _ in range(self.board_size * self.board_size)]  # Reset board
-            for move, player in self.move_history:
-                self.board[move] = self.player_symbols[player]
-                self.print_board()
-                print("---------------------")
-            print("End of game replay.")
+    
 
 def play_game():
     game = TicTacToe()
@@ -201,10 +191,8 @@ def play_game():
 
 
 if __name__ == '__main__':
-    game = play_game()
-    replay = input("Do you want to replay the game? (yes/no): ")
-    if replay.lower() == 'yes':
-       game.replay_game()
+    play_game()
+    
 
 
   
